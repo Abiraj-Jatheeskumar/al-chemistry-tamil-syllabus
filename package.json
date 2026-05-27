@@ -1,0 +1,23 @@
+{
+  "name": "al-chemistry-tamil-syllabus",
+  "version": "1.0.0",
+  "private": true,
+  "description": "GCE A/L Chemistry Tamil syllabus — interactive digital study platform (NIE Sri Lanka)",
+  "scripts": {
+    "build": "node convert.js",
+    "dev": "npx --yes serve . -l 3000"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "chemistry",
+    "tamil",
+    "a-level",
+    "sri-lanka",
+    "nie",
+    "syllabus"
+  ],
+  "author": "J.Abiraj",
+  "license": "MIT"
+}

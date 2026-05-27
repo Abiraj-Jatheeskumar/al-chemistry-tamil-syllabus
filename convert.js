@@ -1,9 +1,10 @@
 const fs = require('fs');
 const path = require('path');
 
-const workspaceDir = "c:\\Users\\digit\\Downloads\\New folder";
+const workspaceDir = __dirname;
 const inputPath = path.join(workspaceDir, "AL_Chemistry_Tamil_Master.md");
 const outputPath = path.join(workspaceDir, "AL_Chemistry_Tamil_Master.html");
+const indexPath = path.join(workspaceDir, "index.html");
 
 console.log(`Reading from: ${inputPath}`);
 console.log(`Writing to: ${outputPath}`);
@@ -2053,4 +2054,7 @@ const finalHtml = `<!DOCTYPE html>
 `;
 
 fs.writeFileSync(outputPath, finalHtml, 'utf8');
+fs.writeFileSync(indexPath, finalHtml, 'utf8');
 console.log("HTML compilation completed successfully!");
+console.log(`  → ${outputPath}`);
+console.log(`  → ${indexPath}`);
