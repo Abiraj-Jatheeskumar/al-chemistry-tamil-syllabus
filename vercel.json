@@ -8,16 +8,5 @@
       "source": "/",
       "destination": "/index.html"
     }
-  ],
-  "headers": [
-    {
-      "source": "/(.*\\.(html|js|css|json|md))",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=3600, must-revalidate"
-        }
-      ]
-    }
   ]
 }
