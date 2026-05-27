@@ -11,6 +11,13 @@ console.log(`Writing to: ${outputPath}`);
 
 const mdContent = fs.readFileSync(inputPath, 'utf8');
 
+const AUTHOR = {
+    name: 'J.Abiraj',
+    degree: 'BSc (Hons) in Computer Science',
+    initials: 'JA',
+    platform: 'Sri Lankan A/L Chemistry Knowledge Platform'
+};
+
 // Helper to escape HTML
 function escapeHtml(text) {
     return text
@@ -491,6 +498,28 @@ lessonsParts.forEach((part, idx) => {
     convertedSections.push(lessonHtml);
 });
 
+let welcomeSectionHtml = '';
+const headerContentLines = headerPart.trim().split('\n').slice(2).filter(l => l.trim() && l.trim() !== '---');
+if (headerContentLines.length > 0) {
+    const welcomeBody = convertBlockToHtml(headerContentLines, 'welcome');
+    welcomeSectionHtml = `
+<div class="premium-card card-intro welcome-section-card" id="welcome-section">
+    <div class="card-header">
+        <div class="card-icon">${icons.summary}</div>
+        <h3 class="card-title-text">வளநூல் அறிமுகம் &amp; அலகு விபரம்</h3>
+    </div>
+    <div class="card-body">
+        ${welcomeBody}
+    </div>
+</div>`;
+    tocData.unshift({
+        id: 'welcome-section',
+        title: '📚 அறிமுகம் & அலகு விபரம்',
+        subtitle: 'Introduction & Unit Index',
+        isLesson: false
+    });
+}
+
 let sidebarNavHtml = [];
 tocData.forEach(item => {
     let badgeStyle = item.isLesson ? '<span class="nav-dot-badge"></span>' : '<span class="nav-dot-badge dot-summary"></span>';
@@ -515,7 +544,7 @@ const finalHtml = `<!DOCTYPE html>
     
     <!-- SEO Optimization -->
     <meta name="description" content="தேசிய கல்வி நிறுவகம் (NIE), இலங்கையின் தரம் 12 & 13 க.பொ.த (உயர் தரம்) இரசாயனவியல் தமிழ் மொழிமூல வளநூல்களின் முழுமையான டிஜிட்டல் அறிவுத் தளம்.">
-    <meta name="author" content="J.Abiraj BSc(Hons) in Computer Science">
+    <meta name="author" content="${AUTHOR.name} — ${AUTHOR.degree}">
     <meta name="keywords" content="A/L Chemistry Tamil, உயர் தரம் இரசாயனவியல், NIE Chemistry Tamil, Sri Lankan Chemistry Tamil Notes, J.Abiraj Chemistry">
     
     <!-- Premium Google Fonts -->
@@ -635,7 +664,7 @@ const finalHtml = `<!DOCTYPE html>
             --glass-bg: var(--glass-bg-light);
             --glass-border: var(--glass-border-light);
             
-            --sidebar-width: 340px;
+            --sidebar-width: 300px;
             --font-body: 'Catamaran', 'Noto Sans Tamil', 'Inter', sans-serif;
             --font-heading: 'Hind Madurai', 'Noto Sans Tamil', sans-serif;
         }
@@ -693,6 +722,8 @@ const finalHtml = `<!DOCTYPE html>
         .sidebar {
             width: var(--sidebar-width);
             height: 100vh;
+            height: 100dvh;
+            max-height: 100dvh;
             position: fixed;
             left: 0;
             top: 0;
@@ -700,20 +731,26 @@ const finalHtml = `<!DOCTYPE html>
             border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
-            z-index: 100;
+            min-height: 0;
+            z-index: 110;
             box-shadow: var(--shadow);
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease;
+            transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease, box-shadow 0.35s ease;
+            padding-top: env(safe-area-inset-top, 0px);
+        }
+
+        body.sidebar-open {
+            overflow: hidden;
         }
 
         .main-content {
             margin-left: var(--sidebar-width);
             flex: 1;
-            padding: 40px;
+            padding: 28px 32px;
             max-width: 1300px;
             width: calc(100% - var(--sidebar-width));
             display: flex;
             flex-direction: column;
-            gap: 40px;
+            gap: 28px;
         }
 
         /* Top Progress Bar */
@@ -734,40 +771,140 @@ const finalHtml = `<!DOCTYPE html>
             border-radius: 0 5px 5px 0;
         }
 
+        @media (min-width: 1025px) {
+            .progress-bar-container {
+                left: var(--sidebar-width);
+                width: calc(100% - var(--sidebar-width));
+            }
+        }
+
         /* Sidebar Logo / Branding */
         .sidebar-header {
-            padding: 24px;
+            padding: 14px 18px;
             border-bottom: 1px solid var(--border);
             display: flex;
             flex-direction: column;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .sidebar-header-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
             gap: 12px;
+        }
+
+        .sidebar-close-btn {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            min-width: 36px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--bg-primary);
+            color: var(--text-secondary);
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-close-btn:hover {
+            color: var(--accent);
+            border-color: var(--accent);
+            background: var(--accent-bg);
+        }
+
+        /* Sidebar Author Card */
+        .sidebar-author {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 18px;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(135deg, rgba(13, 148, 136, 0.06) 0%, transparent 100%);
+            flex-shrink: 0;
+        }
+
+        [data-theme="dark"] .sidebar-author {
+            background: linear-gradient(135deg, rgba(45, 212, 191, 0.08) 0%, transparent 100%);
+        }
+
+        .sidebar-author-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--accent), #0f766e);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: 0.78rem;
+            letter-spacing: 0.03em;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(13, 148, 136, 0.25);
+        }
+
+        .sidebar-author-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+        }
+
+        .sidebar-author-label {
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .sidebar-author-name {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+
+        .sidebar-author-degree {
+            font-size: 0.75rem;
+            color: var(--accent);
+            font-weight: 500;
+            line-height: 1.3;
         }
 
         .logo-title {
             font-family: var(--font-heading);
-            font-size: 1.25rem;
+            font-size: 1.08rem;
             font-weight: 700;
             color: var(--accent);
-            line-height: 1.4;
+            line-height: 1.35;
         }
 
         .logo-tag {
-            font-size: 0.8rem;
+            font-size: 0.74rem;
             color: var(--text-muted);
             font-weight: 500;
         }
 
         /* Search Box */
         .search-container {
-            padding: 16px 24px;
+            padding: 10px 18px;
             border-bottom: 1px solid var(--border);
             position: relative;
+            flex-shrink: 0;
         }
 
         .search-input {
             width: 100%;
-            padding: 12px 16px 12px 40px;
-            border-radius: 12px;
+            padding: 9px 12px 9px 36px;
+            border-radius: 10px;
             border: 1px solid var(--border);
             background-color: var(--bg-primary);
             color: var(--text-primary);
@@ -784,7 +921,7 @@ const finalHtml = `<!DOCTYPE html>
 
         .search-icon {
             position: absolute;
-            left: 36px;
+            left: 30px;
             top: 50%;
             transform: translateY(-50%);
             color: var(--text-muted);
@@ -794,21 +931,22 @@ const finalHtml = `<!DOCTYPE html>
         /* Navigation List */
         .sidebar-menu {
             flex: 1;
+            min-height: 0;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
             overscroll-behavior: contain;
-            padding: 16px;
+            padding: 10px 12px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 4px;
         }
 
         .sidebar-nav-item {
             display: flex;
             align-items: center;
-            gap: 16px;
-            padding: 14px 16px;
-            border-radius: 12px;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 10px;
             color: var(--text-secondary);
             text-decoration: none;
             font-size: 0.95rem;
@@ -851,22 +989,25 @@ const finalHtml = `<!DOCTYPE html>
 
         .nav-main-title {
             font-family: var(--font-heading);
-            font-size: 0.95rem;
+            font-size: 0.88rem;
+            line-height: 1.3;
         }
 
         .nav-subtitle {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             color: var(--text-muted);
         }
 
         /* Sidebar Footer / Controls */
         .sidebar-footer {
-            padding: 20px 24px;
+            padding: 12px 18px;
+            padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
             border-top: 1px solid var(--border);
             display: flex;
             justify-content: space-between;
             align-items: center;
             background-color: var(--bg-sidebar);
+            flex-shrink: 0;
         }
 
         .control-btn {
@@ -874,9 +1015,9 @@ const finalHtml = `<!DOCTYPE html>
             border: none;
             color: var(--text-secondary);
             cursor: pointer;
-            padding: 10px;
-            min-width: 44px;
-            min-height: 44px;
+            padding: 8px;
+            min-width: 40px;
+            min-height: 40px;
             border-radius: 8px;
             display: flex;
             align-items: center;
@@ -892,27 +1033,336 @@ const finalHtml = `<!DOCTYPE html>
 
         /* Hero / Header Section */
         .hero-section {
-            background: linear-gradient(135deg, #0f766e 0%, #115e59 50%, #0f172a 100%);
-            border-radius: 24px;
-            padding: 60px 48px;
+            --hero-border: rgba(255, 255, 255, 0.22);
+            background: linear-gradient(145deg, #042f2e 0%, #0d5c56 38%, #0f766e 58%, #0c4a6e 100%);
+            border-radius: 22px;
+            padding: 2px;
             color: #ffffff;
             position: relative;
             overflow: hidden;
-            box-shadow: var(--shadow);
+            box-shadow:
+                0 0 0 1px rgba(255, 255, 255, 0.06) inset,
+                0 24px 48px -28px rgba(2, 6, 23, 0.85),
+                0 8px 24px -12px rgba(13, 148, 136, 0.35);
             display: flex;
             flex-direction: column;
-            gap: 24px;
+            gap: 0;
+            isolation: isolate;
         }
 
-        .hero-section::before {
+        .hero-section > .hero-shell {
+            border-radius: 20px;
+            padding: 26px 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(160deg, rgba(15, 23, 42, 0.35) 0%, rgba(15, 118, 110, 0.2) 100%);
+        }
+
+        .hero-bg {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+            border-radius: inherit;
+        }
+
+        .hero-bg-mesh {
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 10% 20%, rgba(45, 212, 191, 0.35) 0%, transparent 55%),
+                radial-gradient(ellipse 50% 40% at 92% 8%, rgba(56, 189, 248, 0.25) 0%, transparent 50%),
+                radial-gradient(ellipse 40% 50% at 75% 95%, rgba(16, 185, 129, 0.2) 0%, transparent 45%);
+        }
+
+        .hero-bg-grid {
+            position: absolute;
+            inset: 0;
+            opacity: 0.35;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+            background-size: 32px 32px;
+            mask-image: radial-gradient(ellipse 90% 80% at 50% 40%, black 20%, transparent 75%);
+        }
+
+        .hero-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(40px);
+            opacity: 0.55;
+        }
+
+        .hero-orb-1 {
+            width: 180px;
+            height: 180px;
+            top: -40px;
+            right: 12%;
+            background: #2dd4bf;
+        }
+
+        .hero-orb-2 {
+            width: 140px;
+            height: 140px;
+            bottom: -30px;
+            left: 55%;
+            background: #38bdf8;
+        }
+
+        @media (prefers-reduced-motion: no-preference) {
+            .hero-orb-1 {
+                animation: hero-float 8s ease-in-out infinite;
+            }
+            .hero-orb-2 {
+                animation: hero-float 10s ease-in-out infinite reverse;
+            }
+            .hero-highlight {
+                background-size: 200% auto;
+                animation: hero-shimmer 6s linear infinite;
+            }
+        }
+
+        @keyframes hero-float {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(12px, -16px); }
+        }
+
+        @keyframes hero-shimmer {
+            0% { background-position: 0% center; }
+            100% { background-position: 200% center; }
+        }
+
+        .hero-inner {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            align-items: center;
+        }
+
+        @media (min-width: 880px) {
+            .hero-inner {
+                grid-template-columns: 1fr minmax(200px, 240px);
+                gap: 24px;
+            }
+        }
+
+        .hero-main {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .hero-visual {
+            display: none;
+            position: relative;
+        }
+
+        @media (min-width: 880px) {
+            .hero-visual {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+        }
+
+        .hero-molecule-card {
+            width: 100%;
+            max-width: 220px;
+            aspect-ratio: 1;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.04) 100%);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow:
+                0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+                0 16px 40px -20px rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 20px;
+            position: relative;
+        }
+
+        .hero-molecule-card::before {
             content: '';
             position: absolute;
-            top: 0;
-            left: 0;
+            inset: 12px;
+            border-radius: 50%;
+            border: 1px dashed rgba(255, 255, 255, 0.15);
+        }
+
+        .hero-molecule-svg {
             width: 100%;
-            height: 100%;
-            background-image: radial-gradient(circle at 80% 20%, rgba(20, 184, 166, 0.15) 0%, transparent 50%);
-            pointer-events: none;
+            height: auto;
+            opacity: 0.9;
+        }
+
+        .hero-molecule-label {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.68rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            opacity: 0.75;
+            font-weight: 600;
+        }
+
+        .hero-bottom {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .hero-stats-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            width: 100%;
+        }
+
+        @media (min-width: 768px) {
+            .hero-stats-grid {
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+            }
+        }
+
+        .hero-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            width: fit-content;
+            padding: 4px 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.12);
+            font-size: 0.7rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            font-weight: 600;
+            opacity: 0.95;
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+        }
+
+        .hero-kicker-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #a7f3d0;
+            box-shadow: 0 0 0 5px rgba(167, 243, 208, 0.25);
+        }
+
+        .hero-highlight {
+            background: linear-gradient(90deg, #a7f3d0, #5eead4, #67e8f9, #a7f3d0);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 2px 12px rgba(45, 212, 191, 0.45));
+        }
+
+        .hero-quick-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .hero-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 11px;
+            border-radius: 999px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.94);
+            transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+        }
+
+        .hero-tag::before {
+            content: '';
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: #5eead4;
+            box-shadow: 0 0 8px #2dd4bf;
+        }
+
+        @media (hover: hover) {
+            .hero-tag:hover {
+                background: rgba(255, 255, 255, 0.16);
+                border-color: rgba(255, 255, 255, 0.35);
+                transform: translateY(-1px);
+            }
+        }
+
+        .hero-actions {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .hero-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border-radius: 10px;
+            border: 1px solid transparent;
+            text-decoration: none;
+            font-size: 0.82rem;
+            font-weight: 600;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+        }
+
+        .hero-btn-primary {
+            background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%);
+            color: #0f172a;
+            box-shadow: 0 10px 24px -12px rgba(15, 23, 42, 0.7);
+        }
+
+        .hero-btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 28px -12px rgba(15, 23, 42, 0.75);
+        }
+
+        .hero-btn-secondary {
+            background: rgba(255, 255, 255, 0.06);
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.28);
+            backdrop-filter: blur(8px);
+        }
+
+        .hero-btn-secondary:hover {
+            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.45);
+        }
+
+        .hero-btn svg {
+            flex-shrink: 0;
+        }
+
+        .hero-divider {
+            height: 1px;
+            width: 100%;
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.07) 72%, rgba(255, 255, 255, 0) 100%);
+            position: relative;
+            z-index: 1;
         }
 
         .badge-nie {
@@ -920,28 +1370,41 @@ const finalHtml = `<!DOCTYPE html>
             background-color: rgba(255, 255, 255, 0.15);
             border: 1px solid rgba(255, 255, 255, 0.3);
             backdrop-filter: blur(8px);
-            padding: 6px 16px;
+            padding: 5px 12px;
             border-radius: 50px;
-            font-size: 0.8rem;
+            font-size: 0.74rem;
             font-weight: 600;
             letter-spacing: 0.05em;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
+        }
+
+        .sidebar-header .badge-nie {
+            background-color: var(--accent-bg);
+            border: 1px solid var(--border);
+            color: var(--accent);
+            backdrop-filter: none;
+            font-size: 0.68rem;
+            padding: 4px 10px;
         }
 
         .hero-title {
             font-family: var(--font-heading);
-            font-size: 3rem;
+            font-size: clamp(1.7rem, 3.8vw, 2.4rem);
             font-weight: 700;
-            line-height: 1.2;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            line-height: 1.18;
+            text-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+            letter-spacing: -0.02em;
+            max-width: 20ch;
         }
 
         .hero-subtitle {
-            font-size: 1.4rem;
-            font-weight: 400;
+            font-size: clamp(0.92rem, 2vw, 1.05rem);
+            font-weight: 500;
             opacity: 0.9;
+            max-width: 48ch;
+            line-height: 1.5;
         }
 
         .hero-author {
@@ -953,6 +1416,134 @@ const finalHtml = `<!DOCTYPE html>
             margin-top: 10px;
             border-top: 1px solid rgba(255, 255, 255, 0.15);
             padding-top: 20px;
+        }
+
+        /* Professional Author Profile Card */
+        .author-profile-card {
+            display: grid;
+            grid-template-columns: 52px 1fr;
+            grid-template-areas: "avatar details";
+            column-gap: 14px;
+            row-gap: 0;
+            align-items: center;
+            width: 100%;
+            margin-top: 0;
+            padding: 14px 18px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.05) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            border-radius: 14px;
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            position: relative;
+            z-index: 1;
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+        }
+
+        .author-profile-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 18px;
+            right: 18px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+        }
+
+        .author-avatar {
+            grid-area: avatar;
+            width: 52px;
+            height: 52px;
+            border-radius: 12px;
+            background: linear-gradient(145deg, rgba(255,255,255,0.25), rgba(255,255,255,0.08));
+            border: 2px solid rgba(255, 255, 255, 0.35);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            letter-spacing: 0.04em;
+            flex-shrink: 0;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+            align-self: center;
+        }
+
+        .author-details {
+            grid-area: details;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: center;
+            gap: 6px;
+            min-width: 0;
+            text-align: left;
+        }
+
+        .author-label {
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            opacity: 0.8;
+            font-weight: 600;
+            line-height: 1.2;
+            margin: 0;
+        }
+
+        .author-info-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px 12px;
+            width: 100%;
+        }
+
+        .author-name {
+            font-family: 'Inter', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            line-height: 1.2;
+            color: #ffffff;
+            margin: 0;
+            white-space: nowrap;
+        }
+
+        .author-degree {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.76rem;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.95);
+            background: rgba(255, 255, 255, 0.12);
+            padding: 4px 11px;
+            border-radius: 50px;
+            line-height: 1.2;
+            white-space: nowrap;
+        }
+
+        .author-degree svg {
+            flex-shrink: 0;
+            opacity: 0.85;
+        }
+
+        .author-platform {
+            font-size: 0.72rem;
+            opacity: 0.75;
+            margin: 0;
+            line-height: 1.4;
+            width: 100%;
+        }
+
+        @media (min-width: 640px) {
+            .author-info-row {
+                flex-wrap: nowrap;
+            }
+            .author-platform {
+                border-top: 1px solid rgba(255, 255, 255, 0.12);
+                padding-top: 6px;
+                margin-top: 2px;
+            }
         }
 
         /* Quick Stats Grid */
@@ -972,6 +1563,58 @@ const finalHtml = `<!DOCTYPE html>
             flex-direction: column;
             gap: 8px;
             backdrop-filter: blur(12px);
+        }
+
+        .hero-section .stat-card {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.04) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 12px 14px;
+            border-radius: 14px;
+            gap: 4px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+        }
+
+        .hero-section .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #5eead4, transparent);
+            opacity: 0.6;
+        }
+
+        @media (hover: hover) {
+            .hero-section .stat-card:hover {
+                transform: translateY(-2px);
+                border-color: rgba(255, 255, 255, 0.32);
+                background: linear-gradient(145deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.06) 100%);
+            }
+        }
+
+        .hero-section .stat-value {
+            color: #ecfdf5;
+            font-size: 1.35rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+
+        .hero-section .stat-label {
+            color: rgba(255, 255, 255, 0.82);
+            font-size: 0.7rem;
+            line-height: 1.35;
+            font-weight: 500;
+        }
+
+        .hero-bottom {
+            position: relative;
+            z-index: 1;
         }
 
         .stat-value {
@@ -1444,11 +2087,129 @@ const finalHtml = `<!DOCTYPE html>
             font-size: 0.9rem;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 12px;
             margin-top: 40px;
         }
 
-        /* Float Action Buttons / Mobile Menu Trigger */
+        .footer-author {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 16px 24px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            max-width: 520px;
+            margin: 0 auto;
+        }
+
+        .footer-author-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--accent), #0f766e);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: 0.75rem;
+            flex-shrink: 0;
+        }
+
+        .footer-author-text {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 2px;
+            text-align: left;
+        }
+
+        .footer-author-name {
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+        }
+
+        .footer-author-degree {
+            font-size: 0.8rem;
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        .footer-copy {
+            font-size: 0.82rem;
+            opacity: 0.75;
+        }
+
+        .footer-note {
+            font-size: 0.8rem;
+            opacity: 0.7;
+            max-width: 640px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* Mobile Top Navigation Bar */
+        .mobile-topbar {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: calc(52px + env(safe-area-inset-top, 0px));
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-left: max(12px, env(safe-area-inset-left, 0px));
+            padding-right: max(12px, env(safe-area-inset-right, 0px));
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+            z-index: 120;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .topbar-menu-btn,
+        .topbar-theme-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            min-width: 44px;
+            border: none;
+            border-radius: 12px;
+            background: transparent;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            touch-action: manipulation;
+        }
+
+        .topbar-menu-btn:hover,
+        .topbar-theme-btn:hover {
+            background: var(--bg-primary);
+            color: var(--accent);
+        }
+
+        .topbar-title {
+            flex: 1;
+            font-family: var(--font-heading);
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.3;
+        }
+
+        /* Float Action Buttons / Mobile Menu Trigger (fallback) */
         .mobile-menu-btn {
             display: none;
             position: fixed;
@@ -1488,9 +2249,10 @@ const finalHtml = `<!DOCTYPE html>
             left: 0;
             width: 100%;
             height: 100%;
+            height: 100dvh;
             background-color: rgba(9, 13, 22, 0.5);
             backdrop-filter: blur(4px);
-            z-index: 95;
+            z-index: 125;
             opacity: 0;
             transition: opacity 0.3s ease;
             pointer-events: none;
@@ -1504,36 +2266,56 @@ const finalHtml = `<!DOCTYPE html>
 
         /* Responsive Breakpoints */
         @media (max-width: 1024px) {
+            .mobile-topbar {
+                display: flex;
+            }
+            .progress-bar-container {
+                top: calc(52px + env(safe-area-inset-top, 0px));
+            }
             .sidebar {
                 transform: translateX(-100%);
-                width: min(290px, 85vw);
-                max-width: 85vw;
-                z-index: 100;
+                width: min(300px, 86vw);
+                max-width: 86vw;
+                z-index: 130;
                 padding-bottom: env(safe-area-inset-bottom, 0px);
+                box-shadow: none;
             }
             .sidebar.open {
                 transform: translateX(0);
+                box-shadow: 8px 0 40px rgba(0, 0, 0, 0.25);
+            }
+            .sidebar-close-btn {
+                display: flex;
             }
             .main-content {
                 margin-left: 0;
                 width: 100%;
                 max-width: 100%;
-                padding: 20px 16px 96px;
+                padding: calc(64px + env(safe-area-inset-top, 0px)) 16px 40px;
                 padding-left: max(16px, env(safe-area-inset-left, 0px));
                 padding-right: max(16px, env(safe-area-inset-right, 0px));
-                padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
-                gap: 24px;
+                padding-bottom: calc(48px + env(safe-area-inset-bottom, 0px));
+                gap: 20px;
             }
             .mobile-menu-btn {
-                display: flex;
+                display: none;
             }
             .search-input {
                 font-size: 16px;
             }
             .hero-section {
-                padding: 36px 20px;
                 border-radius: 16px;
-                gap: 16px;
+            }
+            .hero-section > .hero-shell {
+                padding: 20px 18px;
+                gap: 14px;
+            }
+            .hero-bottom {
+                gap: 10px;
+            }
+            .hero-stats-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 8px;
             }
             .hero-title {
                 font-size: clamp(1.5rem, 5vw, 2rem);
@@ -1542,8 +2324,39 @@ const finalHtml = `<!DOCTYPE html>
             .hero-subtitle {
                 font-size: 1.15rem;
             }
-            .hero-author {
-                flex-wrap: wrap;
+            .hero-main {
+                gap: 10px;
+            }
+            .hero-kicker {
+                font-size: 0.7rem;
+            }
+            .hero-actions {
+                gap: 10px;
+            }
+            .hero-btn {
+                font-size: 0.82rem;
+                padding: 9px 14px;
+            }
+            .author-profile-card {
+                grid-template-columns: 48px 1fr;
+                column-gap: 12px;
+                padding: 12px 14px;
+            }
+            .author-avatar {
+                width: 48px;
+                height: 48px;
+                font-size: 0.95rem;
+            }
+            .author-name {
+                font-size: 1rem;
+            }
+            .author-degree {
+                font-size: 0.74rem;
+            }
+            .author-info-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 6px;
             }
             .logo-title {
                 font-size: 1.1rem;
@@ -1614,8 +2427,8 @@ const finalHtml = `<!DOCTYPE html>
         
         @media (max-width: 480px) {
             .main-content {
-                padding-top: 16px;
-                gap: 20px;
+                padding-top: calc(60px + env(safe-area-inset-top, 0px));
+                gap: 18px;
             }
             .stats-grid {
                 grid-template-columns: 1fr 1fr;
@@ -1635,10 +2448,10 @@ const finalHtml = `<!DOCTYPE html>
                 font-size: 0.7rem;
             }
             
-            .hero-section {
-                padding: 28px 16px;
+            .hero-section > .hero-shell {
+                padding: 16px 14px;
+                gap: 12px;
             }
-            
             .hero-title {
                 font-size: 1.5rem;
             }
@@ -1646,12 +2459,81 @@ const finalHtml = `<!DOCTYPE html>
             .hero-subtitle {
                 font-size: 1rem;
             }
+            .hero-actions {
+                width: 100%;
+            }
+            .hero-btn {
+                flex: 1 1 calc(50% - 6px);
+                justify-content: center;
+            }
+            .hero-kicker {
+                letter-spacing: 0.05em;
+            }
+            .hero-tag {
+                font-size: 0.72rem;
+                padding: 5px 10px;
+            }
+            .author-profile-card {
+                grid-template-columns: 44px 1fr;
+                column-gap: 10px;
+                padding: 12px;
+            }
+            .author-name {
+                white-space: normal;
+            }
+            .author-degree {
+                white-space: normal;
+            }
+            .author-info-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+            .author-platform {
+                font-size: 0.68rem;
+            }
+            .hero-section .stat-card {
+                padding: 8px 10px;
+            }
+            .hero-section .stat-value {
+                font-size: 1.1rem;
+            }
+            .author-avatar {
+                width: 48px;
+                height: 48px;
+                font-size: 0.95rem;
+            }
+            .author-name {
+                font-size: 1.1rem;
+            }
+            .author-degree {
+                font-size: 0.78rem;
+                padding: 3px 10px;
+            }
+            .author-platform {
+                font-size: 0.72rem;
+            }
+            .footer-author {
+                flex-direction: column;
+                text-align: center;
+                padding: 14px 16px;
+            }
+            .footer-author-text {
+                align-items: center;
+                text-align: center;
+            }
             .badge-nie {
                 font-size: 0.72rem;
                 padding: 5px 12px;
             }
             .sidebar-nav-item {
                 padding: 12px 14px;
+            }
+            .sidebar-author {
+                padding: 12px 16px;
+            }
+            .sidebar-header {
+                padding: 16px;
             }
             .lesson-content {
                 padding: 12px;
@@ -1676,7 +2558,7 @@ const finalHtml = `<!DOCTYPE html>
 
         /* Print styles */
         @media print {
-            .sidebar, .mobile-menu-btn, .progress-bar-container, .control-btn, .search-container {
+            .sidebar, .mobile-menu-btn, .mobile-topbar, .progress-bar-container, .control-btn, .search-container {
                 display: none !important;
             }
             body {
@@ -1713,8 +2595,19 @@ const finalHtml = `<!DOCTYPE html>
 </head>
 <body>
 
+    <!-- Mobile Top Navigation Bar -->
+    <header class="mobile-topbar" id="mobileTopbar">
+        <button class="topbar-menu-btn" id="topbarMenuBtn" onclick="toggleMobileSidebar()" aria-label="Open navigation menu" aria-expanded="false">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" id="topbarMenuIcon"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <span class="topbar-title">க.பொ.த இரசாயனவியல்</span>
+        <button class="topbar-theme-btn" onclick="toggleTheme()" aria-label="Toggle theme">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="topbarThemeIcon"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+        </button>
+    </header>
+
     <!-- Mobile Sidebar Overlay Backdrop -->
-    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleMobileSidebar()"></div>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleMobileSidebar()" aria-hidden="true"></div>
 
     <!-- Top Reading Progress Bar -->
     <div class="progress-bar-container">
@@ -1722,14 +2615,28 @@ const finalHtml = `<!DOCTYPE html>
     </div>
 
     <!-- Sticky Navigation Sidebar -->
-    <aside class="sidebar" id="sidebar">
+    <aside class="sidebar" id="sidebar" aria-label="Main navigation">
         <div class="sidebar-header">
-            <span class="badge-nie">
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"/></svg>
-                NIE Sri Lanka Standard
-            </span>
+            <div class="sidebar-header-top">
+                <span class="badge-nie">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"/></svg>
+                    NIE Sri Lanka Standard
+                </span>
+                <button class="sidebar-close-btn" onclick="toggleMobileSidebar()" aria-label="Close navigation menu">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
             <h1 class="logo-title">க.பொ.த (உயர் தரம்) இரசாயனவியல்</h1>
             <span class="logo-tag">தமிழ் மொழிமூல வளநூல் அறிவுத் தளம்</span>
+        </div>
+
+        <div class="sidebar-author">
+            <div class="sidebar-author-avatar" aria-hidden="true">${AUTHOR.initials}</div>
+            <div class="sidebar-author-info">
+                <span class="sidebar-author-label">Prepared &amp; Analyzed by</span>
+                <span class="sidebar-author-name">${AUTHOR.name}</span>
+                <span class="sidebar-author-degree">${AUTHOR.degree}</span>
+            </div>
         </div>
         
         <!-- Search bar -->
@@ -1765,48 +2672,114 @@ const finalHtml = `<!DOCTYPE html>
         
         <!-- Premium Hero Header -->
         <header class="hero-section">
-            <span class="badge-nie">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"/></svg>
-                தேசிய கல்வி நிறுவகம் (NIE) இலங்கை பாடத்திட்டம்
-            </span>
-            <h1 class="hero-title">க.பொ.த (உயர் தரம்) இரசாயனவியல்</h1>
-            <p class="hero-subtitle">தமிழ் மொழிமூல முழுமையான அறிவுத் தளம்</p>
-            
-            <!-- Quick Stats -->
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <span class="stat-value">14</span>
-                    <span class="stat-label">பாட அலகுகள்</span>
+            <div class="hero-shell">
+                <div class="hero-bg" aria-hidden="true">
+                    <div class="hero-bg-mesh"></div>
+                    <div class="hero-bg-grid"></div>
+                    <div class="hero-orb hero-orb-1"></div>
+                    <div class="hero-orb hero-orb-2"></div>
                 </div>
-                <div class="stat-card">
-                    <span class="stat-value">100+</span>
-                    <span class="stat-label">முக்கிய கருத்துக்கள்</span>
+
+                <div class="hero-inner">
+                    <div class="hero-main">
+                        <span class="badge-nie">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"/></svg>
+                            தேசிய கல்வி நிறுவகம் (NIE) இலங்கை
+                        </span>
+                        <span class="hero-kicker"><span class="hero-kicker-dot"></span> Professional Study Hub</span>
+                        <h1 class="hero-title">க.பொ.த (உயர் தரம்) <span class="hero-highlight">இரசாயனவியல்</span></h1>
+                        <p class="hero-subtitle">தமிழ் மொழிமூல முழுமையான அறிவுத் தளம் — பாட வழிகாட்டல், முக்கிய கருத்துக்கள் &amp; பரீட்சை மீளாய்வு.</p>
+                        <div class="hero-quick-tags">
+                            <span class="hero-tag">NIE Aligned</span>
+                            <span class="hero-tag">Exam Focused</span>
+                            <span class="hero-tag">Tamil Medium</span>
+                        </div>
+                        <div class="hero-actions">
+                            <a href="#welcome-section" class="hero-btn hero-btn-primary" onclick="showAndScrollTo('welcome-section', event)">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                                Start Learning
+                            </a>
+                            <a href="#final-revision" class="hero-btn hero-btn-secondary" onclick="showAndScrollTo('final-revision', event)">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18"/><path d="M12 3v18"/></svg>
+                                Final Revision
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="hero-visual" aria-hidden="true">
+                        <div class="hero-molecule-card">
+                            <svg class="hero-molecule-svg" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="60" cy="28" r="10" stroke="rgba(255,255,255,0.7)" stroke-width="2" fill="rgba(45,212,191,0.25)"/>
+                                <circle cx="32" cy="72" r="10" stroke="rgba(255,255,255,0.7)" stroke-width="2" fill="rgba(56,189,248,0.2)"/>
+                                <circle cx="88" cy="72" r="10" stroke="rgba(255,255,255,0.7)" stroke-width="2" fill="rgba(167,243,208,0.2)"/>
+                                <circle cx="60" cy="92" r="8" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" fill="rgba(255,255,255,0.08)"/>
+                                <line x1="60" y1="38" x2="38" y2="64" stroke="rgba(255,255,255,0.35)" stroke-width="1.5"/>
+                                <line x1="60" y1="38" x2="82" y2="64" stroke="rgba(255,255,255,0.35)" stroke-width="1.5"/>
+                                <line x1="42" y1="72" x2="78" y2="72" stroke="rgba(255,255,255,0.35)" stroke-width="1.5"/>
+                                <line x1="60" y1="80" x2="60" y2="84" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
+                            </svg>
+                            <span class="hero-molecule-label">Chemistry Core</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <span class="stat-value">250+</span>
-                    <span class="stat-label">படிப்பு மணித்தியாலங்கள்</span>
+
+                <div class="hero-divider"></div>
+
+                <div class="hero-bottom">
+                    <div class="stats-grid hero-stats-grid">
+                        <div class="stat-card">
+                            <span class="stat-value">14</span>
+                            <span class="stat-label">பாட அலகுகள்</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value">100+</span>
+                            <span class="stat-label">முக்கிய கருத்துக்கள்</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value">250+</span>
+                            <span class="stat-label">படிப்பு மணித்தியாலங்கள்</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value">A/L</span>
+                            <span class="stat-label">பரீட்சை வழிகாட்டல்கள்</span>
+                        </div>
+                    </div>
+
+                    <div class="author-profile-card">
+                        <div class="author-avatar" aria-hidden="true">${AUTHOR.initials}</div>
+                        <div class="author-details">
+                            <span class="author-label">Prepared &amp; Analyzed by</span>
+                            <div class="author-info-row">
+                                <h2 class="author-name">${AUTHOR.name}</h2>
+                                <span class="author-degree">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"/></svg>
+                                    ${AUTHOR.degree}
+                                </span>
+                            </div>
+                            <span class="author-platform">${AUTHOR.platform}</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <span class="stat-value">A/L</span>
-                    <span class="stat-label">பரீட்சை வழிகாட்டல்கள்</span>
-                </div>
-            </div>
-            
-            <div class="hero-author">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                <span>Prepared &amp; Analyzed by <strong>J.Abiraj BSc(Hons) in Computer Science</strong> | Sri Lankan A/L Chemistry Knowledge Platform</span>
             </div>
         </header>
 
         <!-- Lessons Container -->
         <div class="lessons-container" id="lessonsContainer">
+            ${welcomeSectionHtml}
             ${convertedSections.join("\n")}
         </div>
 
         <!-- Elegant Footer -->
         <footer class="footer">
-            <p>© J.Abiraj BSc(Hons) in Computer Science | Sri Lankan A/L Chemistry Knowledge Platform</p>
-            <p style="font-size: 0.8rem; opacity: 0.7;">பாடத்திட்ட குறிப்புகள் மற்றும் பகுப்பாய்வுகள் தேசிய கல்வி நிறுவகத்தின் வளநூல்களின் அடிப்படையில் வடிவமைக்கப்பட்டுள்ளன.</p>
+            <div class="footer-author">
+                <div class="footer-author-avatar" aria-hidden="true">${AUTHOR.initials}</div>
+                <div class="footer-author-text">
+                    <span class="footer-author-name">${AUTHOR.name}</span>
+                    <span class="footer-author-degree">${AUTHOR.degree}</span>
+                </div>
+            </div>
+            <p class="footer-copy">© ${AUTHOR.platform}</p>
+            <p class="footer-note">பாடத்திட்ட குறிப்புகள் மற்றும் பகுப்பாய்வுகள் தேசிய கல்வி நிறுவகத்தின் வளநூல்களின் அடிப்படையில் வடிவமைக்கப்பட்டுள்ளன.</p>
         </footer>
     </main>
 
@@ -1832,11 +2805,29 @@ const finalHtml = `<!DOCTYPE html>
 
         function updateThemeIcon(theme) {
             const icon = document.getElementById('themeIcon');
-            if (theme === 'dark') {
-                icon.innerHTML = '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>';
-            } else {
-                icon.innerHTML = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>';
-            }
+            const topbarIcon = document.getElementById('topbarThemeIcon');
+            const darkSvg = '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>';
+            const lightSvg = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>';
+            const svg = theme === 'dark' ? darkSvg : lightSvg;
+            if (icon) icon.innerHTML = svg;
+            if (topbarIcon) topbarIcon.innerHTML = svg;
+        }
+
+        const MENU_ICON_OPEN = '<line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>';
+        const MENU_ICON_CLOSE = '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>';
+
+        function updateMenuIcons(isOpen) {
+            const menuIcon = document.getElementById('menuIcon');
+            const topbarIcon = document.getElementById('topbarMenuIcon');
+            const topbarBtn = document.getElementById('topbarMenuBtn');
+            const icon = isOpen ? MENU_ICON_CLOSE : MENU_ICON_OPEN;
+            if (menuIcon) menuIcon.innerHTML = icon;
+            if (topbarIcon) topbarIcon.innerHTML = icon;
+            if (topbarBtn) topbarBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        }
+
+        function isMobileViewport() {
+            return window.matchMedia('(max-width: 1024px)').matches;
         }
 
         // Lesson Accordion Toggle
@@ -1889,38 +2880,72 @@ const finalHtml = `<!DOCTYPE html>
         // Mobile Sidebar Trigger
         function toggleMobileSidebar() {
             const sidebar = document.getElementById('sidebar');
-            const menuIcon = document.getElementById('menuIcon');
             const overlay = document.getElementById('sidebarOverlay');
             const isOpen = sidebar.classList.contains('open');
             if (isOpen) {
                 sidebar.classList.remove('open');
-                if (overlay) overlay.classList.remove('open');
+                if (overlay) {
+                    overlay.classList.remove('open');
+                    overlay.setAttribute('aria-hidden', 'true');
+                }
+                document.body.classList.remove('sidebar-open');
                 document.body.style.overflow = '';
-                menuIcon.innerHTML = '<line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>';
+                updateMenuIcons(false);
             } else {
                 sidebar.classList.add('open');
-                if (overlay) overlay.classList.add('open');
-                if (window.matchMedia('(max-width: 1024px)').matches) {
+                if (overlay) {
+                    overlay.classList.add('open');
+                    overlay.setAttribute('aria-hidden', 'false');
+                }
+                if (isMobileViewport()) {
+                    document.body.classList.add('sidebar-open');
                     document.body.style.overflow = 'hidden';
                 }
-                menuIcon.innerHTML = '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>';
+                updateMenuIcons(true);
             }
         }
+
+        function closeMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar && sidebar.classList.contains('open')) {
+                toggleMobileSidebar();
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeMobileSidebar();
+        });
+
+        window.addEventListener('resize', () => {
+            if (!isMobileViewport()) {
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('sidebarOverlay');
+                if (sidebar && sidebar.classList.contains('open')) {
+                    sidebar.classList.remove('open');
+                    if (overlay) {
+                        overlay.classList.remove('open');
+                        overlay.setAttribute('aria-hidden', 'true');
+                    }
+                    document.body.classList.remove('sidebar-open');
+                    document.body.style.overflow = '';
+                    updateMenuIcons(false);
+                }
+            }
+        });
 
         // Reading Progress Indicator
         window.addEventListener('scroll', () => {
             const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
             const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-            const scrolled = (winScroll / height) * 100;
+            const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
             document.getElementById('readingProgress').style.width = scrolled + '%';
             
             // Highlight active sidebar menu item based on scroll position
-            const sections = document.querySelectorAll('.lesson-section');
+            const sections = document.querySelectorAll('.lesson-section, #welcome-section');
             let activeId = "";
             sections.forEach(sec => {
                 const top = sec.offsetTop;
-                const height = sec.offsetHeight;
-                if (window.scrollY >= top - 200) {
+                if (window.scrollY >= top - 220) {
                     activeId = sec.getAttribute('id');
                 }
             });
